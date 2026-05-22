@@ -7,7 +7,7 @@
 
     <command detect_errors="exit_code"><![CDATA[
 
-        set -euxo pipefail
+        set -euxo pipefail &&
 
         #set $l_table = $lookup_table if $lookup_table else ($__tool_directory__ + "/default_files/LookupTable.tRFs.MINTmap_v1.txt")
         #set $o_types = $trf_types if $trf_types else ($__tool_directory__ + "/default_files/OtherAnnotations.MINTmap_v1.txt")
