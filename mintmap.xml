@@ -14,13 +14,14 @@
         #set $s_ref = $reference_trna if $reference_trna else ($__tool_directory__ + "/default_files/tRNAspace.Spliced.Sequences.MINTmap_v1.fa")
 
 
+
         perl \$CONDA_PREFIX/share/java/mintmap/MINTmap.pl
             -f $input_fastq
-            -p $output_prefix 
+            -p $output_prefix
             -l $l_table
             -s $s_ref
-            -o $o_types 
-            -a $assembly 
+            -o $o_types
+            -a $assembly
             -j \$CONDA_PREFIX/share/java/mintmap/MINTplates/ &&
         pwd &&
         ls -alt . &&
@@ -33,40 +34,17 @@
     ]]></command>
 
     <inputs>
-        <param name="input_fastq"
-               type="data"
-               format="fastqsanger,fastqsanger.gz"
-               help="Input FASTQ file containing small RNA-seq reads."
-               label="Input FASTQ file" />
+        <param name="input_fastq" type="data" format="fastqsanger,fastqsanger.gz" help="Input FASTQ file containing small RNA-seq reads." label="Input FASTQ file" />
 
-        <param name="output_prefix"
-               type="text"
-               label="Output prefix"
-               optional="true"
-               value="mintmap_output"
-               help="Prefix for the output files." />
+        <param name="output_prefix" type="text" label="Output prefix" optional="true" value="mintmap_output" help="Prefix for the output files." />
 
-        <param name="lookup_table"
-               type="data"
-               format="txt"
-               optional="true"
-               label="Lookup table file" />
+        <param name="lookup_table" type="data" format="txt" optional="true" label="Lookup table file" />
 
-        <param name="reference_trna"
-               type="data"
-               format="fasta"
-               optional="true"
-               label="Reference tRNA FASTA" />
+        <param name="reference_trna" type="data" format="fasta" optional="true" label="Reference tRNA FASTA" />
 
-        <param name="trf_types"
-               type="data"
-               format="txt"
-               optional="true"
-               label="tRF type file" />
-    
-        <param name="assembly"
-               type="select"
-               label="Genome assembly">
+        <param name="trf_types" type="data" format="txt" optional="true" label="tRF type file" />
+
+        <param name="assembly" type="select" label="Genome assembly">
             <option value="hg38">hg38</option>
             <option value="mm39">mm39</option>
             <option value="dm6" selected="true">dm6</option>
@@ -79,35 +57,12 @@
     </inputs>
 
     <outputs>
-        <data name="out_ambig_countsmeta"
-              format="txt"
-              from_work_dir="out_ambig_countsmeta.txt"
-              />
-        
-        <data name="out_ambig_expr_html"
-              format="html"
-              from_work_dir="out_ambig_expr_html.html"
-              />
-        
-        <data name="out_ambig_expr_txt"
-              format="txt"
-              from_work_dir="out_ambig_expr_txt.txt"
-              />
-
-        <data name="out_exclu_countsmeta"
-              format="txt"
-              from_work_dir="out_exclu_countsmeta.txt"
-              />
-
-        <data name="out_exclu_expr_html"
-              format="html"
-              from_work_dir="out_exclu_expr_html.html"
-              />
-
-        <data name="out_exclu_expr_txt"
-              format="txt"
-              from_work_dir="out_exclu_expr_txt.txt"
-              />
+        <data name="out_ambig_countsmeta" format="txt" from_work_dir="out_ambig_countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for non-exclusive tRFs profiles" />
+        <data name="out_ambig_expr_html" format="html" from_work_dir="out_ambig_expr_html.html" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles HTML" />
+        <data name="out_ambig_expr_txt" format="txt" from_work_dir="out_ambig_expr_txt.txt" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles text" />
+        <data name="out_exclu_countsmeta" format="txt" from_work_dir="out_exclu_countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for exclusive tRFs profiles" />
+        <data name="out_exclu_expr_html" format="html" from_work_dir="out_exclu_expr_html.html" label="${tool.name} on ${on_string}: exclusive tRFs profiles HTML" />
+        <data name="out_exclu_expr_txt" format="txt" from_work_dir="out_exclu_expr_txt.txt" label="${tool.name} on ${on_string}: exclusive tRFs profiles text" />
     </outputs>
 
     <tests>
