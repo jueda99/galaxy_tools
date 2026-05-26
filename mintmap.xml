@@ -7,7 +7,7 @@
 
     <command detect_errors="exit_code"><![CDATA[
 
-        set -euxo pipefail &&
+        ##set -euxo pipefail &&
 
         #set $l_table = $lookup_table if $lookup_table else ($__tool_directory__ + "/default_files/LookupTable.tRFs.MINTmap_v1.txt")
         #set $o_types = $trf_types if $trf_types else ($__tool_directory__ + "/default_files/OtherAnnotations.MINTmap_v1.txt")
@@ -24,13 +24,13 @@
             -a $assembly
             -j \$CONDA_PREFIX/share/java/mintmap/MINTplates/ &&
         pwd &&
-        ls -alt . &&
-        mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.countsmeta.txt" out_ambig_countsmeta.txt &&
-        mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.html" out_ambig_expr_html.html &&
-        mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.txt" out_ambig_expr_txt.txt &&
-        mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.countsmeta.txt" out_exclu_countsmeta.txt &&
-        mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.html" out_exclu_expr_html.html &&
-        mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.txt" out_exclu_expr_txt.txt
+        ls -alt .
+        ##mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.countsmeta.txt" out_ambig_countsmeta.txt &&
+        ##mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.html" out_ambig_expr_html.html &&
+        ##mv "${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.txt" out_ambig_expr_txt.txt &&
+        ##mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.countsmeta.txt" out_exclu_countsmeta.txt &&
+        ##mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.html" out_exclu_expr_html.html &&
+        ##mv "${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.txt" out_exclu_expr_txt.txt
     ]]></command>
 
     <inputs>
@@ -57,12 +57,12 @@
     </inputs>
 
     <outputs>
-        <data name="out_ambig_countsmeta" format="txt" from_work_dir="out_ambig_countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for non-exclusive tRFs profiles" />
-        <data name="out_ambig_expr_html" format="html" from_work_dir="out_ambig_expr_html.html" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles HTML" />
-        <data name="out_ambig_expr_txt" format="txt" from_work_dir="out_ambig_expr_txt.txt" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles text" />
-        <data name="out_exclu_countsmeta" format="txt" from_work_dir="out_exclu_countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for exclusive tRFs profiles" />
-        <data name="out_exclu_expr_html" format="html" from_work_dir="out_exclu_expr_html.html" label="${tool.name} on ${on_string}: exclusive tRFs profiles HTML" />
-        <data name="out_exclu_expr_txt" format="txt" from_work_dir="out_exclu_expr_txt.txt" label="${tool.name} on ${on_string}: exclusive tRFs profiles text" />
+        <data name="out_ambig_countsmeta" format="txt" from_work_dir="${output_prefix}-MINTmap_v1-ambiguous-tRFs.countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for non-exclusive tRFs profiles" />
+        <data name="out_ambig_expr_html" format="html" from_work_dir="${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.html" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles HTML" />
+        <data name="out_ambig_expr_txt" format="txt" from_work_dir="${output_prefix}-MINTmap_v1-ambiguous-tRFs.expression.txt" label="${tool.name} on ${on_string}: non-exclusive tRFs profiles text" />
+        <data name="out_exclu_countsmeta" format="txt" from_work_dir="${output_prefix}-MINTmap_v1-exclusive-tRFs.countsmeta.txt" label="${tool.name} on ${on_string}: High level mapping stats for exclusive tRFs profiles" />
+        <data name="out_exclu_expr_html" format="html" from_work_dir="${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.html" label="${tool.name} on ${on_string}: exclusive tRFs profiles HTML" />
+        <data name="out_exclu_expr_txt" format="txt" from_work_dir="${output_prefix}-MINTmap_v1-exclusive-tRFs.expression.txt" label="${tool.name} on ${on_string}: exclusive tRFs profiles text" />
     </outputs>
 
     <tests>
