@@ -7,7 +7,7 @@
 
     <command detect_errors="exit_code"><![CDATA[
 
-        set -euxo pipefail
+        set -euxo pipefail &&
 
         #set $l_table = $lookup_table if $lookup_table else ($__tool_directory__ + "/default_files/LookupTable.tRFs.MINTmap_v1.txt")
         #set $o_types = $trf_types if $trf_types else ($__tool_directory__ + "/default_files/OtherAnnotations.MINTmap_v1.txt")
@@ -67,15 +67,40 @@
 
     <tests>
         <test>
+            <!-- inputs -->
             <param name='input_fastq' value='testInput.fastq'/>
             <param name="output_prefix" value="testOutput"/>
             <param name="assembly" value="hg19" />
+
+            <!-- outputs-->
             <output name='out_ambig_countsmeta' file='testOutput-MINTmap_v1-ambiguous-tRFs.countsmeta.txt'/>
-            <output name='out_ambig_expr_html' file='testOutput-MINTmap_v1-ambiguous-tRFs.expression.html'/>
-            <output name='out_ambig_expr_txt' file='testOutput-MINTmap_v1-ambiguous-tRFs.expression.txt'/>
+            <output name='out_ambig_expr_html'>
+                <assert_contents>
+                    <has_size value='376866' delta='37000'/>
+                    <has_text text="Table of ambiguous-tRFs for"/>
+                </assert_contents>
+            </output>
+            <output name="out_ambig_expr_txt">
+                <assert_contents>
+                    <has_line line="MINTbase Unique ID&#009;tRF sequence&#009;tRF type(s)&#009;Unnormalized read counts&#009;RPM read counts (using all counts from this file[2347] in denominator)&#009;RPM read counts (using read count of input file from -f parameter[100000] in denominator)&#009;RPM read counts (using read count from optional -d parameter[na] in denominator)&#009;Sequence locations in tRNA space (comma deliminated)"/>
+                    <has_n_lines n="615" delta="0"/>
+                    <has_text text="GCATTGGTGGTTCAGTGGTAGA"/>
+                </assert_contents>
+            </output>
             <output name='out_exclu_countsmeta' file='testOutput-MINTmap_v1-exclusive-tRFs.countsmeta.txt'/>
-            <output name='out_exclu_expr_html' file='testOutput-MINTmap_v1-exclusive-tRFs.expression.html'/>
-            <output name='out_exclu_expr_txt' file='testOutput-MINTmap_v1-exclusive-tRFs.expression.txt'/>
+            <output name='out_exclu_expr_html'>
+                <assert_contents>
+                    <has_size value='560153' delta='56000'/>
+                    <has_text text="Table of exclusive-tRFs for "/>
+                </assert_contents>
+            </output>
+            <output name='out_exclu_expr_txt'>
+                <assert_contents>
+                    <has_line line="MINTbase Unique ID&#009;tRF sequence&#009;tRF type(s)&#009;Unnormalized read counts&#009;RPM read counts (using all counts from this file[3381] in denominator)&#009;RPM read counts (using read count of input file from -f parameter[100000] in denominator)&#009;RPM read counts (using read count from optional -d parameter[na] in denominator)&#009;Sequence locations in tRNA space (comma deliminated)"/>
+                    <has_n_lines n="1125" delta="0"/>
+                    <has_text text="TGAAAACCTTTTTCCAAGGACACCA"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
 
