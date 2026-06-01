@@ -4,3 +4,5 @@ mintmap/log
 inputMintmap/tool_test_output.html
 inputMintmap/tool_test_output.json
 inputMintmap/test-data/testInput_genome_dmel6.fasta
+tool_test_output.html
+tool_test_output.json
