@@ -1,0 +1,44 @@
+<tool id="mintmap_input" name="MINTmap input generator" version="0.1.0+galaxy0" python_template_version="3.5" profile="21.05">
+    <description>generate required files for the execution of MINTmap</description>
+    <requirements>
+        <requirement type="package" version='1.86'>biopython</requirement>
+        <requirement type="package" version='1.3.1'>bowtie</requirement>
+        <requirement type="package" version='3.0.1'>pandas</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        python '$__tool_directory__/mintmap_input_generator.py' '${trna_fasta}' '${anticodon_file}' '${genome_fasta}' '${trna_bed}' '${lookup_table}' '${tRF_types}' --cleanup
+    ]]></command>
+    <inputs>
+        <param name='trna_fasta' type='data' format='fasta' label='tRNA FASTA File'/>
+        <param name='anticodon_file' type='data' format='csv' label='Anticodon Loop Positions CSV'/>
+        <param name='genome_fasta' type='data' format='fasta' label='Genome FASTA File'/>
+        <param name='trna_bed' type='data' format='bed' label='tRNA BED File'/>
+    </inputs>
+    <outputs>
+        <data name='lookup_table' format='txt' label='Lookup Table'/>
+        <data name='tRF_types' format='txt' label='tRF Types'/>
+    </outputs>
+    <tests>
+        <test>
+            <param name='genome_fasta' value='testInput_genome_dmel6_chr2L_X.fasta'/>
+            <param name='trna_fasta' value='testInput_trna_dmel6_chr2L_X.fasta'/>
+            <param name='trna_bed' value='testInput_trna_dmel6_chr2L_X.bed'/>
+            <param name='anticodon_file' value='testInput_anticodon.csv'/>
+            <output name='lookup_table' file='testOutput_lookup.txt' lines_diff='4'/>
+            <output name='tRF_types' file='testOutput_trfTypes.txt'/>
+        </test>
+    </tests>
+    <help><![CDATA[
+    generates the required files for the execution of MINTmap, including:
+    - lookup table: mapping of tRF IDs to their sequences and types
+    - tRF types: CSV file containing the types of tRFs (e.g. 5'-tRF, 3'-tRF, etc.)
+    ]]></help>
+    <citations>
+        <citation type='bibtex'>
+        @misc{mintmap_input,
+        author = {me, et. at.},
+        title = {mintmap input generator: a pipeline that does something},
+        year = {2026}}
+        </citation>
+    </citations>
+</tool>

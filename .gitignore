@@ -1,5 +1,8 @@
+mintmap/tool_test_output.html
+mintmap/tool_test_output.json
+mintmap/log
+inputMintmap/tool_test_output.html
+inputMintmap/tool_test_output.json
+inputMintmap/test-data/testInput_genome_dmel6.fasta
 tool_test_output.html
 tool_test_output.json
-log
-log_file.txt
-test-data/backup*
