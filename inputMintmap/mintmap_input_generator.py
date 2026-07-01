@@ -386,10 +386,9 @@ def main():
     for rec in SeqIO.parse(TRNA_FASTA, "fasta"):
         seq = str(rec.seq)
         #print(f"rec = \n{rec.description}\n")
-        print(rec.description)
         # extract the tRNA name and for the name used in the anticodon position file
         anticodon_key = "tRNA-"+"-".join(rec.description.split(" ")[0].split("_")[-1].split("-")[1:3])
-        print(anticodon_key)
+        #print(anticodon_key)
 
         # extract tRNA strand and position for tRF_id definition: starnd_start_end
         
@@ -398,7 +397,7 @@ def main():
         pos = "_".join(start_end)
         chr_strand_pos = strand + '_' + pos
         
-        print(f"chr_strand_pos = {chr_strand_pos}")
+        #print(f"chr_strand_pos = {chr_strand_pos}")
 
 
         ### mitochondrial tRNAs

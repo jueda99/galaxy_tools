@@ -1,0 +1,23 @@
+## Planemo Global Configuration File.
+## Everything in this file is completely optional - these values can all be
+## configured via command line options for the corresponding commands.
+
+## Specify a default galaxy_root for test and server commands here.
+#galaxy_root: /home/joe/galaxy_tools
+## Username used with toolshed(s).
+shed_username: "jueda"
+sheds:
+  # For each tool shed you wish to target, uncomment key or both email and
+  # password.
+  toolshed:
+    key: "4568269f6196d4e3cf5f04780a870d01"
+    #email: "<TODO>"
+    #password: "<TODO>"
+  testtoolshed:
+    key: "14a450ffcb4c52dae80bd04c9967fdb0"
+    #email: "<TODO>"
+    #password: "<TODO>"
+  local:
+    #key: "<TODO>"
+    #email: "<TODO>"
+    #password: "<TODO>"
