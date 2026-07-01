@@ -6,7 +6,7 @@
         <requirement type="package" version='3.0.1'>pandas</requirement>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-        python '$__tool_directory__/mintmap_input_generator.py' '${trna_fasta}' '${anticodon_file}' '${genome_fasta}' '${trna_bed}' '${lookup_table}' '${tRF_types}' --cleanup
+        python '$__tool_directory__/mintmap_input_generator.py' '${genome_fasta}' '${trna_fasta}' '${trna_bed}' '${anticodon_file}' '${lookup_table}' '${tRF_types}' --cleanup
     ]]></command>
     <inputs>
         <param name='trna_fasta' type='data' format='fasta' label='tRNA FASTA File'/>
@@ -20,9 +20,9 @@
     </outputs>
     <tests>
         <test>
-            <param name='genome_fasta' value='testInput_genome_dmel6_chr2L_X.fasta'/>
-            <param name='trna_fasta' value='testInput_trna_dmel6_chr2L_X.fasta'/>
-            <param name='trna_bed' value='testInput_trna_dmel6_chr2L_X.bed'/>
+            <param name='genome_fasta' value='testInput_genome_dmel6_chr2L.fasta'/>
+            <param name='trna_fasta' value='testInput_trna_dmel6_chr2L.fasta'/>
+            <param name='trna_bed' value='testInput_trna_dmel6_chr2L.bed'/>
             <param name='anticodon_file' value='testInput_anticodon.csv'/>
             <output name='lookup_table' file='testOutput_lookup.txt' lines_diff='4'/>
             <output name='tRF_types' file='testOutput_trfTypes.txt'/>

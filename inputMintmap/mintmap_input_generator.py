@@ -1,8 +1,13 @@
 # This script generates the input files for MINTmap, given a tRNA FASTA file, a CSV file with anticodon loop positions, a genome FASTA file, and a tRNA BED file.
 # It performs the following steps:
-# 1. Generate all possible tRF sequences from the tRNA sequences, considering all possible
-# 2. Identifying whether each tRF maps exclusively to the tRNA space or also to other regions of the genome, by mapping them to the genome and applying an exonic mask based on the tRNA annotations.
+# 1. Generate all possible tRF sequences from the tRNA sequences, considering all possible start/end combinations, from 16 to 50 nucleotides and classify them.
+# 2. Identifying whether each tRF maps exclusively to the tRNA space or also to other regions of the genome, by mapping them to the genome and applying an exonic mask on mapped positions.
 # 3. Write the lookup table and the tRF types file for MINTmap.
+#
+# This script is written for: 
+#   - tRNA reference fasta and bed files from GtRNAdb
+#   - reference genome fasta from UCSC Genome Browser
+#   - anticodon loop positions csv file with a header, of the form: tRNA-AminoAcid-Anticodon,Anticodon,Loop_Start_pos,Loop_End_pos
 # 
 # Bowtie is used for mapping, and the script assumes that bowtie is installed and available in the system PATH.
 #
@@ -25,26 +30,25 @@ import shutil # for removing folders
 
 parser = argparse.ArgumentParser(description="Generate input files for MINTmap")
 
-parser.add_argument("trna_fasta", help="tRNA FASTA file")
-parser.add_argument("anticodon_file", help="CSV file with anticodon loop positions")
 parser.add_argument("genome_fasta", help="genome FASTA file")
+parser.add_argument("trna_fasta", help="tRNA FASTA file")
 parser.add_argument("trna_bed", help="tRNA BED file")
+parser.add_argument("anticodon_file", help="CSV file with anticodon loop positions")
 
 parser.add_argument("lookup_table", help="lookup table file")
 parser.add_argument("tRF_types", help="tRF types file")
 
-parser.add_argument("--threads", type=int, help="number of threads to use for bowtie mapping, default is 8", default=8)
+parser.add_argument("--threads", type=int, help="Number of threads to use for bowtie mapping, default is 8", default=8)
 
 parser.add_argument("--cleanup", action="store_true", help="Include this flag to clean up intermediate files")
 
 
 args = parser.parse_args()
 
-
-TRNA_FASTA = args.trna_fasta
-ANTICODON_FILE = args.anticodon_file
 GENOME_FASTA = args.genome_fasta
+TRNA_FASTA = args.trna_fasta
 TRNA_BED = args.trna_bed
+ANTICODON_FILE = args.anticodon_file
 
 THREADS = args.threads
 CLEANUP = args.cleanup
@@ -67,6 +71,20 @@ TRF_FASTA = INTERMEDIATE_FOLDER + "trfs.fasta"
 
 BOWTIE_IDX_DIR= INTERMEDIATE_FOLDER + "bowtie_index/"
 BOWTIE_IDX= BOWTIE_IDX_DIR + "genome_idx"
+
+
+######## Declaration of class: tRF ########
+class tRFseq:
+    """A class representing a tRF, with the following attributes: id, full tRF sequences, tRF sequence without modification, tRF class, exclusivity"""
+
+    def __init__(self, tRFid, full_seq, clean_seq, category):
+        self.id = tRFid
+        self.full_seq = full_seq       # with modifications (5'variants/3'CCA)
+        self.clean_seq = clean_seq     # biological sequence without modifications
+        self.category = category       # 5'-tRF, 3'-half, etc.
+        self.exclusivity = 'N'
+
+    
 
 
 ######## CLASSIFication of tRFs########
@@ -112,10 +130,9 @@ def classify_trf(start, end, offset, ac_start, full_trf_len):
 # Fills the trf dict with tRF id as keys and their sequence with/without modifications and types as values.
 # 
 #
-def generate_trfs(seq, ac_start, trf_dict, chr_strand_pos, seen_trf_seqs):
+def generate_trfs(seq, ac_start, trf_objects_list, chr_strand_pos, seen_trf_seqs):
 
     variants = ["", "A", "T", "C", "G"]     # nucleotide added at the 5' end of the tRNA sequences to accommodate post-transcriptional modifications
-
     seq = seq + "CCA"   # add CCA, a tRNA maturation signal, at the 3' end of each tRNA sequence
 
 
@@ -137,7 +154,6 @@ def generate_trfs(seq, ac_start, trf_dict, chr_strand_pos, seen_trf_seqs):
 
                 t = classify_trf(start, end, offset, ac, len(s)) 
 
-
                 full_trf = s[start:end]   # full tRF sequence, which can contain the post-transcriptional modifications (A/T/C/G at the 5' end and CCA at the 3' end)
                 
                 # get start and end position without prefix & CCA modifications
@@ -154,10 +170,10 @@ def generate_trfs(seq, ac_start, trf_dict, chr_strand_pos, seen_trf_seqs):
 
                 # Unique ID for each tRF
                 prefix_id = "0" if offset == 0 else prefix
-                s_e = f"{start}_{end}"
-                tRFid = f"{prefix_id}_{chr_strand_pos}_{s_e}"
+                tRFid = f"{prefix_id}_{chr_strand_pos}_{start}_{end}"
                 
-                trf_dict[tRFid] = [full_trf, clean_fragment, t]
+                trf_obj = tRFseq(tRFid, full_trf, clean_fragment, t)
+                trf_objects_list.append(trf_obj)
 
 
     return
@@ -222,12 +238,13 @@ def create_mask():
         masks[rec.id] = [["0"] * L]
         masks[rec.id].append(["0"] * L)
         '''
+        
 
     with open(TRNA_BED) as f:
-        next(f) # skip header
+        #next(f) # skip header
         for line in f:
-            chrom, start, end, name, _, strand = line.strip().split()
-            start, end = int(start)-1, int(end)-1 # convert to 0-based coordinates
+            chrom, start, end, name, _, strand, _, _, _, _, _, _ = line.strip().split()
+            start, end = int(start), int(end) # do -1 if need to convert to 0-based coordinates
 
             idx = [i for i, r in enumerate(genome) if r.id == chrom][0] # we suppose the genome fasta contains the chr information (which is stored in the "genome" SeqRecord object)
 
@@ -250,13 +267,6 @@ def create_mask():
                     masks[chrom][1][end + 1] = 50     # ASCII for '2'
     return masks
 
-    '''
-    with open(MASK_FILE, "w") as f:
-        for m in masks:
-            two_line = f'>{m}_strand_+\n{"".join(masks[m][0])}\n>{m}_strand_-\n{"".join(masks[m][1])}\n'
-            f.write(two_line)
-    '''
-
 
 
 ######## BUILD BOWTIE INDEX ########
@@ -269,7 +279,7 @@ def build_index():
 ######## tRF MAPPING ########
 #
 # Bowtie mapping coommand to map the tRF sequences to the genome, allowing only perfect matches (no mismatch allowed, -v 0) and reporting all alignments (-a).
-#
+# 
 def map_trfs(fasta):
     return subprocess.run([
         "bowtie", "-v", "0", "-a",
@@ -332,12 +342,11 @@ def is_exclusive(seq, hits, mask):
     for ref, strand, pos in hits:
         if strand == "+":
             segment = mask[ref][0][pos:pos+L]
+            #print(ref, strand, pos, segment)
         else:
             segment = mask[ref][1][pos:pos+L]
+            #print(ref, strand, pos, segment)
         if 48 in segment: # if there's a 0 in the segment, it means that the tRF doesn't map exclusively on the tRNA space
-            #####
-            #print(ref,strand, pos, "\n",seq, "\n", segment)
-            #####
             return False
 
     return True
@@ -366,94 +375,109 @@ def main():
     mask = create_mask() # tRNA mask: region of tRNA = 1, one base upstream and 3 bases downstream of tRNA = 2, other region = 0
     build_index()
 
-    all_trfs = []
-    types = {}
+    all_trf_obj = []
     
-    trf_dict = {}    # dict of the form {tRF_id: tRFsequence, tRF sequence from unmodified tRNA, tRF_type}
     seen_trf_seqs = set()   # set to keep track of the tRF sequences to avoid duplicates
 
     # parse anticodon loop positions into a dict {tRNA_name: anticodon_loop_start_position}
-    anticodon_dict = parse_anticodon_positions(ANTICODON_FILE) 
+    anticodon_dict = parse_anticodon_positions(ANTICODON_FILE)
 
     # handle tRNA one by one to generate tRFs and classify them
     for rec in SeqIO.parse(TRNA_FASTA, "fasta"):
         seq = str(rec.seq)
         #print(f"rec = \n{rec.description}\n")
-        
         # extract the tRNA name and for the name used in the anticodon position file
-        #anticodon_key = "tRNA-"+"-".join(rec.description.split("name=")[1].split(";")[0].split(":")[-1].split("-")[:2])
-        anticodon_key = "tRNA-"+"-".join(rec.description.split("_")[1].split("-")[:2])
+        anticodon_key = "tRNA-"+"-".join(rec.description.split(" ")[0].split("_")[-1].split("-")[1:3])
         #print(anticodon_key)
 
-        # extract tRNA starnd and postion for tRF_id definition: starnd_start_end
-        chr_strand_pos = "_".join(rec.description.split('_')[-4:])
+        # extract tRNA strand and position for tRF_id definition: starnd_start_end
+        
+        strand = rec.description.split('(')[-1].strip(')')
+        start_end = rec.description.split('(')[-2].split(':')[-1].split('-')
+        pos = "_".join(start_end)
+        chr_strand_pos = strand + '_' + pos
+        
         #print(f"chr_strand_pos = {chr_strand_pos}")
 
 
         ### mitochondrial tRNAs
-        #if rec.description.split("loc=")[1].startswith("mitochondrion_genome"):
-        if rec.description.startswith("trnaMT"):
+        if rec.description.startswith("Drosophila_melanogaster_mt"):
             ac_start_position = mt_tRNA_acloop_finder(seq, anticodon_key, anticodon_dict)
-            trfs = generate_trfs(seq, ac_start_position, trf_dict, chr_strand_pos, seen_trf_seqs)
+            generate_trfs(seq, ac_start_position, all_trf_obj, chr_strand_pos, seen_trf_seqs)     
 
         ### nuclear tRNAs
         elif anticodon_key in anticodon_dict:
             #print(f"anticodon found for {anticodon_key} at position {anticodon_dict[anticodon_key]}")
-            trfs = generate_trfs(seq, anticodon_dict[anticodon_key], trf_dict, chr_strand_pos, seen_trf_seqs)
+            generate_trfs(seq, anticodon_dict[anticodon_key], all_trf_obj, chr_strand_pos, seen_trf_seqs)
         else:
-            trfs = generate_trfs(seq, -1, trf_dict, chr_strand_pos, seen_trf_seqs) # if we don't know the anticodon loop position, we pass -1 to the generate_trfs function, which will then classify all tRFs as 5'-tRF, 3'-tRF or i-tRF based on their start and end positions only (without considering the anticodon loop position)
+            generate_trfs(seq, -1, all_trf_obj, chr_strand_pos, seen_trf_seqs) # if we don't know the anticodon loop position, we pass -1 to the generate_trfs function, which will then classify all tRFs as 5'-tRF, 3'-tRF or i-tRF based on their start and end positions only (without considering the anticodon loop position)
+            
 
-        #for s, t in trfs:   # s = tRF sequence, t = tRF type
-        #    types[s] = t
-
-
-
-    unique = list(types.keys()) # contains all unique tRF sequences
 
 
 
     unique_trfs = {}
-    for trfid, values in trf_dict.items():
-        clean_seq = values[1]  # get the "unmodified" sequence
-    
+    for obj in all_trf_obj:
+          
         # If we haven't seen this biological sequence yet, keep it
-        if clean_seq not in unique_trfs:
-            unique_trfs[clean_seq] = {
-                "id": [trfid],
-                "raw_seq": values[0]
-            }
+        if obj.clean_seq not in unique_trfs:
+            unique_trfs[obj.clean_seq] = [obj.id]
+                
         # otherwise, we only keep its id
         else:
-            unique_trfs[clean_seq]["id"].append(trfid)
+            unique_trfs[obj.clean_seq].append(obj.id)
 
     with open(TRF_FASTA, "w") as f:    
-        for clean_seq in unique_trfs:
-            f.write(f">{('.').join(unique_trfs[clean_seq]['id'])}\n{clean_seq}\n")
+        for clean_seq, ids in unique_trfs.items():
+            f.write(f">{('---').join(ids)}\n{clean_seq}\n")
         
 
-
-
-
-
-    '''
-    # write fasta of tRFs
-    with open("old_fasta", "w") as f:
-        for i, s in enumerate(unique):
-            f.write(f">trf_{i}\n{s}\n")
-    '''
-
-
     res = map_trfs(TRF_FASTA) # res contains the output of bowtie mapping of tRFs on the genome
-    #print(res)
     hits = parse_hits(res)  # hits is a dict of mapping tRF IDs (e.g. "trf_0") to lists of (ref, pos) tuples where they map in the genome
     
-
-
+    # Write tTRF type file
     with open(TYPES_OUT, "w") as f:
-        for i in trf_dict:
-            f.write(f"{trf_dict[i][0]}\t{trf_dict[i][-1]}\n")
+        for obj in all_trf_obj:
+            f.write(f"{obj.full_seq}\t{obj.category}\n")
     
 
+    # Build a lookup dict to make later steps easier and faster.
+    # Each tRF id is associated to its corresponding BLAST result
+    trf_to_hits_map = defaultdict(list)
+    for h_key in hits:
+        # Split the long compound key into individual tRF IDs and loop on them
+        # e.g., "0_X_..._0_16.A_X_..._0_17" -> ["0_X_..._0_16", "A_X_..._0_17", ...]        
+        for t_key in h_key.split('---'):
+            # Instantly check if this specific ID exists in your trf_dict (O(1) complexity)
+            trf_to_hits_map[t_key].append(h_key)
+
+    # Turn all_trf_obj into a quick lookup dictionary by ID for step 6
+    obj_lookup = {obj.id: obj for obj in all_trf_obj}
+
+    obj.id
+
+    for obj in all_trf_obj:
+        #print("Processing tRF ID: ", obj.id)
+        # Retrieve all hit keys from the look-up map
+        matching_hits_keys = trf_to_hits_map.get(obj.id,[])
+        if matching_hits_keys:
+            #print(f"Found {len(matching_hits_keys)} matching hit keys for tRF ID {obj.id}: {matching_hits_keys}")
+            # Evaluate exclusivity across ALL matching keys ()'is_exclusive' must be True for ALL matches to write 'Y')
+            all_exclusive = True
+            for h_key in matching_hits_keys:
+                #print("h_key : ", h_key)
+                if not is_exclusive(obj.full_seq, hits[h_key], mask):
+                    all_exclusive = False
+                    #print("it's false : ",all_exclusive)
+                    break  # As soon as one non-exclusive is found, stop checking 
+            #print("all_exclusive for ", obj.id, " is ", all_exclusive)
+            obj.exclusivity = 'Y' if all_exclusive else 'N'
+        else:
+            # Unmapped tRF will be counted as exclusive. The reason why tRF can not map is because they originate from a tRNA containing intron/s and in the genome, the tRF is separated by an intron/s.
+            obj.exclusivity = 'Y'
+    
+
+    # write lookup table file
     with open(LOOKUP, "w") as out:
 
         # write md5sum on the header of the lookup file
@@ -462,34 +486,9 @@ def main():
         out.write(f'#TRNASEQUENCES:{Path(TRNA_FASTA).name} MD5SUM:{tRNA_md5sum}\n')
         out.write(f'#OTHERANNOTATIONS:{Path(TYPES_OUT).name} MD5SUM:{trf_types_md5sum}\n')
 
-        trf_to_hits_map = defaultdict(list)
+        for obj in all_trf_obj:
+            out.write(f"{obj.full_seq}\t{obj.exclusivity}\n")
 
-        for h_key in hits:
-            # Split the long compound key into individual tRF IDs
-            # e.g., "0_X_..._0_16.A_X_..._0_17" -> ["0_X_..._0_16", "A_X_..._0_17"]
-            individual_trf_ids = h_key.split('.')
-            
-            for t_key in individual_trf_ids:
-                # Instantly check if this specific ID exists in your trf_dict (O(1) complexity)
-                if t_key in trf_dict:
-                    trf_to_hits_map[t_key].append(h_key)
-
-
-        for i in trf_dict:
-            # Retrieve all hit keys from the look-up map
-            matching_hits_keys = trf_to_hits_map.get(i, [])
-            if matching_hits_keys:
-                # Evaluate exclusivity across ALL matching keys ()'is_exclusive' must be True for ALL matches to write 'Y')
-                all_exclusive = True
-                for h_key in matching_hits_keys:
-                    if not is_exclusive(trf_dict[i][0], hits[h_key], mask):
-                        all_exclusive = False
-                        break  # As soon as one non-exclusive is found, stop checking 
-                        
-                out.write(f"{trf_dict[i][0]}\t{'Y' if all_exclusive else 'N'}\n")
-            else:
-                out.write(f"{trf_dict[i][0]}\tN\n")
-    
     if CLEANUP:
         shutil.rmtree(INTERMEDIATE_FOLDER)  # remove the intermediate files folder and its contents
 
